@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: disk-tools
+  namespace: kube-system
+  labels:
+    app: disk-tools
+spec:
+  selector:
+    matchLabels:
+      name: disk-tools
+  template:
+    metadata:
+      labels:
+        name: disk-tools
+      annotations:
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+    spec:
+      dnsPolicy: ClusterFirstWithHostNet
+      hostPID: true
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: disk-tools
+          securityContext:
+            privileged: true
+          image: ghcr.io/cit-consulting/disk-tools:1
+          imagePullPolicy: Always
+          command: [ "sleep", "infinity" ]
+          resources:
+            requests:
+              memory: 5Mi
+              cpu: 10m
+            limits:
+              memory: 200Mi
+              cpu: 500m
+          volumeMounts:
+            - name: host
+              mountPath: /host
+      terminationGracePeriodSeconds: 1
+      volumes:
+        - name: host
+          hostPath:
+            path: /
+  updateStrategy:
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 100%
+    type: RollingUpdate
